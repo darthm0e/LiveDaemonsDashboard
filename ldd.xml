@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>LDD</Name>
+  <!-- Nach dem Veröffentlichen deines Images hier eintragen, z. B.
+       DEINUSER/ldd:latest  (Docker Hub)  oder
+       ghcr.io/DEINUSER/ldd:latest  (GitHub Container Registry) -->
+  <Repository>DEINUSER/ldd:latest</Repository>
+  <Registry>https://hub.docker.com/r/DEINUSER/ldd</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/DEINUSER/ldd/issues</Support>
+  <Project>https://github.com/DEINUSER/ldd</Project>
+  <Overview>LDD – Live Daemons Dashboard: ein leichtgewichtiges Übersichts-Dashboard für den Homelab. Zeigt Docker-Container (Status, Uptime, IP, Ports), frei konfigurierbare Dienste und VMs (per HTTP/TCP/Ping) sowie System-Vitaldaten (CPU, RAM, Temperatur via Glances) auf einen Blick. Ein roter Alarm meldet ausgefallene kritische Dienste oder Übertemperatur. Optionaler Passwortschutz. Konfiguration über eine config.yml im appdata-Ordner (wird beim ersten Start automatisch angelegt).</Overview>
+  <Category>Tools: Productivity: Network:Management</Category>
+  <WebUI>http://[IP]:[PORT:8085]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/DEINUSER/ldd/main/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>LDD – Live Daemons Dashboard, ein leichtgewichtiges Übersichts-Dashboard für den Homelab. Docker-Container werden automatisch über den Socket erkannt; Dienste und VMs prüfst du frei per HTTP/TCP/Ping in der config.yml (liegt im appdata-Ordner und wird beim ersten Start angelegt). System-Vitaldaten kommen optional von einem Glances-Server. Der Docker-Socket wird nur lesend eingebunden.</Description>
+  <Networking>
+    <Mode>bridge</Mode>
+    <Publish>
+      <Port>
+        <HostPort>8085</HostPort>
+        <ContainerPort>8080</ContainerPort>
+        <Protocol>tcp</Protocol>
+      </Port>
+    </Publish>
+  </Networking>
+  <Data>
+    <Volume>
+      <HostDir>/mnt/user/appdata/ldd</HostDir>
+      <ContainerDir>/config</ContainerDir>
+      <Mode>rw</Mode>
+    </Volume>
+    <Volume>
+      <HostDir>/var/run/docker.sock</HostDir>
+      <ContainerDir>/var/run/docker.sock</ContainerDir>
+      <Mode>ro</Mode>
+    </Volume>
+  </Data>
+  <Config Name="WebUI-Port" Target="8080" Default="8085" Mode="tcp" Description="Port, unter dem das Dashboard erreichbar ist" Type="Port" Display="always" Required="true" Mask="false">8085</Config>
+  <Config Name="Konfiguration (appdata)" Target="/config" Default="/mnt/user/appdata/ldd" Mode="rw" Description="Ordner mit der config.yml. Wird beim ersten Start mit einer Standard-Config befüllt; danach hier anpassen." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ldd</Config>
+  <Config Name="Docker-Socket (nur lesend)" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="ro" Description="Nötig, damit Container erkannt werden. Achtung: Socket-Zugriff = volle Docker-Kontrolle." Type="Path" Display="always" Required="true" Mask="false">/var/run/docker.sock</Config>
+</Container>

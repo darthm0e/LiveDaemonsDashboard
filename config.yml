@@ -1,0 +1,89 @@
+############################################################
+#  LDD – Live Daemons Dashboard – Konfiguration
+#  Änderungen wirken sofort, kein Neustart nötig (wird bei
+#  jedem Abruf neu eingelesen).
+############################################################
+
+settings:
+  title: "LDD"
+  refresh_interval: 30        # Sekunden, wie oft das Frontend prüft
+
+# ---- Passwortschutz (optional) ----
+# Ein Benutzer, HTTP Basic Auth. Der Browser fragt beim Öffnen nach Login.
+# Hinweis: Passwort steht im Klartext hier -> Datei schützen und/oder das
+# Dashboard nur per HTTPS/Reverse-Proxy erreichbar machen.
+auth:
+  enabled: false
+  username: "admin"
+  password: "bitte-aendern"
+
+# ---- System-Vitaldaten (oben im Dashboard) ----
+# Liest CPU, RAM, Load, Uptime und Temperatur von einem Glances-Server.
+# Auf dem Unraid-Server Glances installieren (siehe README), dann hier
+# enabled: true setzen und die URL eintragen.
+system:
+  enabled: false
+  name: "Unraid"
+  url: "http://127.0.0.1:61208"
+  # api_version: 4     # optional; sonst automatische Erkennung (4 -> 3)
+  temp_warn: 70        # Temp-Kachel gelb ab dieser °C
+  temp_crit: 85        # Temp-Kachel rot ab dieser °C
+  temp_alarm: true     # ab temp_crit zusätzlich den roten Alarm oben auslösen
+
+# ---- Docker-Container ----
+# Werden automatisch über den Docker-Socket erkannt.
+docker:
+  enabled: true
+  show_all: true              # auch gestoppte Container anzeigen
+  critical:                   # diese Container lösen den roten Alarm aus
+    - traefik
+    - postgres
+
+# ---- Eigene Checks: Dienste, VMs, Geräte ----
+# type: http | tcp | ping
+#   http  -> target ist eine URL,  optional insecure / expect_status
+#   tcp   -> target ist host:port
+#   ping  -> target ist host/IP    (Container braucht ping, siehe README)
+# critical: true  -> Ausfall löst den roten Alarm-Balken aus
+groups:
+  - name: "Kritische Dienste"
+    checks:
+      - name: "UniFi Controller"
+        type: http
+        target: "https://127.0.0.1:8443"
+        insecure: true         # selbstsigniertes Zertifikat akzeptieren
+        critical: true
+      - name: "FritzBox"
+        type: ping
+        target: "192.168.178.1"
+      - name: "PostgreSQL"
+        type: tcp
+        target: "192.168.0.10:5432"
+        critical: true
+      - name: "Pi-hole DNS"
+        type: tcp
+        target: "192.168.0.5:53"
+
+  - name: "Virtuelle Maschinen"
+    checks:
+      - name: "VM – Build-Windows"
+        type: ping
+        target: "192.168.0.20"
+        critical: true
+      - name: "VM – Testserver"
+        type: ping
+        target: "192.168.0.21"
+      - name: "Proxmox Web-UI"
+        type: http
+        target: "https://192.168.0.2:8006"
+        insecure: true
+
+  - name: "Extern"
+    checks:
+      - name: "Internet (1.1.1.1)"
+        type: ping
+        target: "1.1.1.1"
+      - name: "Eigene Domain"
+        type: http
+        target: "https://example.com"
+        expect_status: [200]   # nur 200 gilt als OK

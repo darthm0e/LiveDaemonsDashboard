@@ -1,0 +1,19 @@
+services:
+  ldd:
+    build: .
+    # Alternativ ein fertiges Image bauen:  image: ldd:latest
+    container_name: ldd
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # Docker-Socket: nötig, damit Container erkannt werden.
+      # Achtung: Socket-Zugriff = volle Docker-Kontrolle (siehe README, Hardening).
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Deine Konfiguration. Editierbar ohne Neustart.
+      - ./config.yml:/config/config.yml:ro
+    # Für Ping/TCP zu LAN-Geräten und VMs reicht der Bridge-Modus i.d.R.
+    # aus. Wenn du echte LAN-IPs sehen oder ohne Port-Mapping erreichbar
+    # sein willst, kommentiere stattdessen die nächste Zeile ein und
+    # entferne den ports-Block oben:
+    # network_mode: host
