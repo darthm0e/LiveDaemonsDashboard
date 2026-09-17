@@ -83,7 +83,7 @@
     margin: 18px 0 0; padding: 14px 20px;
     background: linear-gradient(180deg, #11171f, var(--panel));
     border: 1px solid var(--border); border-radius: 12px;
-    display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
   }
   .system.err { border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
   .system .host {
@@ -95,7 +95,9 @@
   .host .hname { font-size: 15px; font-weight: 650; letter-spacing: .2px; }
   .host .hsub { font-family: var(--mono); font-size: 9.5px; letter-spacing: 1.5px;
                 text-transform: uppercase; color: var(--faint); margin-top: 1px; }
-  .stat { display: flex; flex-direction: column; gap: 5px; min-width: 86px; }
+  .stat { display: flex; flex-direction: column; gap: 5px; min-width: 76px; }
+  /* Uptime + Temp als eigener Block nach rechts, mit dezentem Trenner */
+  .system .stat.k-uptime { margin-left: auto; border-left: 1px solid var(--border); padding-left: 20px; }
   .stat .slabel { font-size: 9.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--faint); }
   .stat .sval { font-family: var(--mono); font-size: 19px; font-weight: 650;
                 font-variant-numeric: tabular-nums; line-height: 1; color: var(--text); }
@@ -109,6 +111,32 @@
   .gauge.g-warn > i { background: var(--warn); }
   .gauge.g-crit > i { background: var(--down); }
   .system .serr { font-family: var(--mono); font-size: 12px; color: var(--warn); }
+
+  /* ---------- Statusreihe: Vitaldaten links, Systemzustand rechts ---------- */
+  .status-row {
+    display: flex; gap: 14px; align-items: stretch; flex-wrap: wrap;
+    margin: 22px 0 14px;
+  }
+  .status-row #system { flex: 1 1 460px; min-width: 0; display: flex; }
+  .status-row #system .system { margin: 0; flex: 1 1 auto; }
+  .status-row .beacon { margin: 0; flex: 1 1 380px; }
+
+  /* ---------- Kalender: volle Breite, zwei Wochen-Spalten ---------- */
+  #calendar { margin: 0 0 30px; }
+  .cal-panel {
+    margin: 0; padding: 18px 20px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    box-sizing: border-box;
+  }
+  .cal-panel .sec-head { margin-top: 0; }
+  .cal-cols { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
+  .cal-col { flex: 1 1 300px; min-width: 0; }
+  .cal-col + .cal-col { border-left: 1px solid var(--border); padding-left: 26px; }
+  .cal-col-head {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 8px; padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+  }
 
   /* ---------- Signature: LED-Statusleiste ---------- */
   .beacon {
@@ -163,6 +191,35 @@
   .grid {
     display: grid; gap: 12px;
     grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
+  }
+
+  /* ---------- Kalender / Agenda ---------- */
+  .agenda { display: flex; flex-direction: column; gap: 3px; }
+  .agenda-day {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .5px;
+    text-transform: uppercase; color: var(--muted);
+    margin: 14px 0 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--border);
+  }
+  .agenda-day:first-child { margin-top: 0; }
+  .agenda-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 7px 2px; border-bottom: 1px solid var(--border);
+  }
+  .agenda-item:last-child { border-bottom: none; }
+  .agenda-time {
+    font-family: var(--mono); font-size: 12px; color: var(--text);
+    font-variant-numeric: tabular-nums; min-width: 62px; flex: 0 0 auto;
+  }
+  .agenda-item.allday .agenda-time { color: var(--muted); font-size: 10.5px; }
+  .agenda-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .agenda-title {
+    flex: 1 1 auto; min-width: 0; font-size: 13.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .agenda-loc { color: var(--faint); font-size: 12px; }
+  .agenda-cal {
+    font-family: var(--mono); font-size: 10px; color: var(--muted); flex: 0 0 auto;
+    border: 1px solid var(--border-hi); border-radius: 5px; padding: 1px 6px;
   }
 
   /* ---------- Kachel ---------- */
@@ -229,6 +286,10 @@
   .banner.err { border-color: color-mix(in srgb, var(--down) 50%, var(--border)); color: var(--down); }
   .empty { color: var(--faint); font-family: var(--mono); font-size: 12px; padding: 4px 0; }
 
+  @media (max-width: 700px) {
+    .cal-col + .cal-col { border-left: none; padding-left: 0; margin-top: 10px; }
+  }
+
   @media (max-width: 560px) {
     .wrap {
       padding: 16px max(14px, env(safe-area-inset-right)) 48px max(14px, env(safe-area-inset-left));
@@ -241,6 +302,7 @@
     .meta { width: 100%; justify-content: space-between; }
     .refresh { padding: 9px 12px; }
     .system { padding: 13px 15px; gap: 18px 22px; }
+    .system .stat.k-uptime { margin-left: 0; border-left: none; padding-left: 0; }
     .system .host { padding-right: 16px; }
     .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
     .counts { gap: 16px; }
@@ -275,23 +337,27 @@
     </div>
   </header>
 
-  <div id="system"></div>
-
   <div id="configError"></div>
 
-  <div class="beacon ok" id="beacon">
-    <div class="beacon-state">
-      <span class="beacon-label">Systemzustand</span>
-      <span class="beacon-headline" id="beaconHeadline">Initialisiere…</span>
-      <span class="beacon-names" id="beaconNames"></span>
-    </div>
-    <div class="leds" id="leds"></div>
-    <div class="counts">
-      <div class="count up"><div class="n" id="cUp">–</div><div class="l">Up</div></div>
-      <div class="count down"><div class="n" id="cDown">–</div><div class="l">Down</div></div>
-      <div class="count"><div class="n" id="cTotal">–</div><div class="l">Gesamt</div></div>
+  <div class="status-row">
+    <div id="system" style="display:none"></div>
+
+    <div class="beacon ok" id="beacon">
+      <div class="beacon-state">
+        <span class="beacon-label">Systemzustand</span>
+        <span class="beacon-headline" id="beaconHeadline">Initialisiere…</span>
+        <span class="beacon-names" id="beaconNames"></span>
+      </div>
+      <div class="leds" id="leds"></div>
+      <div class="counts">
+        <div class="count up"><div class="n" id="cUp">–</div><div class="l">Up</div></div>
+        <div class="count down"><div class="n" id="cDown">–</div><div class="l">Down</div></div>
+        <div class="count"><div class="n" id="cTotal">–</div><div class="l">Gesamt</div></div>
+      </div>
     </div>
   </div>
+
+  <div id="calendar" style="display:none"></div>
 
   <div id="content"></div>
 </div>
@@ -369,6 +435,57 @@ function dockerCard(c) {
     </div>`;
 }
 
+function fmtAgo(ts) {
+  if (!ts) return null;
+  return fmtUptime(Math.max(0, Math.floor(Date.now() / 1000 - ts)));
+}
+
+function vpnServerCard(s) {
+  const cls = s.ok ? "up" : "down";
+  const crit = s.critical ? `<span class="crit-flag">KRIT</span>` : "";
+  const critDown = (!s.ok && s.critical) ? "crit-down" : "";
+  const metric = s.ok && s.latency_ms != null ? `${s.latency_ms} ms` : (s.ok ? "ok" : "down");
+  return `
+    <div class="card ${cls} ${critDown}">
+      <div class="card-top">
+        <span class="dot"></span>
+        <span class="name" title="${esc(s.name)}">${esc(s.name)}</span>
+        ${crit}<span class="badge">vpn-server</span>
+      </div>
+      <div class="card-bottom">
+        <span class="target" title="${esc(s.target || "")}">${esc(s.host || s.target || "")}</span>
+        <span class="metric">${esc(metric)}</span>
+      </div>
+      <div class="detail">${esc(s.detail || "")}</div>
+    </div>`;
+}
+
+function vpnCard(m) {
+  const cls = m.state === "connected" ? "up" : (m.state === "offline" ? "warn" : "down");
+  const crit = m.critical ? `<span class="crit-flag">KRIT</span>` : "";
+  const critDown = (!m.connected && m.critical) ? "crit-down" : "";
+  const label = m.state === "connected" ? "im VPN" : (m.state === "offline" ? "offline" : "getrennt");
+  const left = m.state === "connected" ? (m.vpn_ip || m.device || "—") : (m.device || "—");
+  const ago = fmtAgo(m.last_seen);
+  let meta;
+  if (m.state === "offline") meta = ago ? `zuletzt vor ${esc(ago)}` : "keine Meldung";
+  else meta = ago ? `gemeldet vor ${esc(ago)}` : "";
+  return `
+    <div class="card ${cls} ${critDown}">
+      <div class="card-top">
+        <span class="dot"></span>
+        <span class="name" title="${esc(m.name)}">${esc(m.name)}</span>
+        ${crit}<span class="badge">${esc(m.service || "vpn")}</span>
+      </div>
+      <div class="card-bottom">
+        <span class="target">${esc(left)}</span>
+        <span class="metric">${esc(label)}</span>
+      </div>
+      ${meta ? `<div class="meta-line">${meta}</div>` : ""}
+      ${m.device ? `<div class="detail">${esc(m.device)}</div>` : ""}
+    </div>`;
+}
+
 function section(title, tally, inner, note) {
   return `
     <section>
@@ -393,7 +510,8 @@ function tempClass(v)  { return v >= 75 ? "crit" : (v >= 60 ? "warn" : "ok"); }
 
 function renderSystem(sys) {
   const el = $("system");
-  if (!sys || !sys.enabled) { el.innerHTML = ""; return; }
+  if (!sys || !sys.enabled) { el.style.display = "none"; el.innerHTML = ""; return; }
+  el.style.display = "";
 
   if (!sys.ok) {
     el.innerHTML = `<div class="system err">
@@ -408,7 +526,7 @@ function renderSystem(sys) {
     if (m.value == null) return "";
     if (m.kind === "percent") {
       const g = gaugeClass(m.value);
-      return `<div class="stat">
+      return `<div class="stat k-${esc(m.key)}">
         <span class="slabel">${esc(m.label)}</span>
         <span class="sval v-${g}">${esc(m.value)}<small>%</small></span>
         <span class="gauge g-${g}"><i style="width:${Math.min(100, m.value)}%"></i></span>
@@ -417,13 +535,13 @@ function renderSystem(sys) {
     }
     if (m.kind === "temp") {
       const g = m.status || tempClass(m.value);
-      return `<div class="stat">
+      return `<div class="stat k-${esc(m.key)}">
         <span class="slabel">${esc(m.label)}</span>
         <span class="sval v-${g}">${esc(m.value)}<small>${esc(m.unit || "°C")}</small></span>
         ${m.detail ? `<span class="sdetail">${esc(m.detail)}</span>` : ""}
       </div>`;
     }
-    return `<div class="stat">
+    return `<div class="stat k-${esc(m.key)}">
       <span class="slabel">${esc(m.label)}</span>
       <span class="sval">${esc(m.value)}</span>
     </div>`;
@@ -439,8 +557,81 @@ function renderSystem(sys) {
   </div>`;
 }
 
+function fmtDayHeader(d) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((d - today) / 86400000);
+  const wd = d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+  if (diff === 0) return "Heute · " + wd;
+  if (diff === 1) return "Morgen · " + wd;
+  return wd;
+}
+
+function agendaHtml(events) {
+  if (!events.length) return `<div class="empty">Keine Termine.</div>`;
+  const groups = new Map();
+  events.forEach(ev => {
+    const d = new Date(ev.start_iso);
+    const key = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(ev);
+  });
+  let html = "";
+  [...groups.keys()].sort((a, b) => a - b).forEach(key => {
+    html += `<div class="agenda-day">${esc(fmtDayHeader(new Date(key)))}</div>`;
+    groups.get(key).forEach(ev => {
+      const time = ev.all_day
+        ? "ganztägig"
+        : new Date(ev.start_iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+      const loc = ev.location ? ` <span class="agenda-loc">· ${esc(ev.location)}</span>` : "";
+      html += `<div class="agenda-item ${ev.all_day ? "allday" : ""}">
+        <span class="agenda-time">${esc(time)}</span>
+        <span class="agenda-dot" style="background:${esc(ev.color)}"></span>
+        <span class="agenda-title">${esc(ev.summary)}${loc}</span>
+        <span class="agenda-cal">${esc(ev.calendar)}</span>
+      </div>`;
+    });
+  });
+  return html;
+}
+
+function renderCalendar(cal) {
+  const el = $("calendar");
+  if (!cal || !cal.enabled) { el.style.display = "none"; el.innerHTML = ""; return; }
+  el.style.display = "";
+  const events = cal.events || [];
+
+  // in aktuelle Woche / Folgewoche aufteilen (Grenze vom Backend)
+  const split = cal.week_split_iso ? new Date(cal.week_split_iso).getTime() : Infinity;
+  const thisW = [], nextW = [];
+  events.forEach(ev => {
+    (new Date(ev.start_iso).getTime() < split ? thisW : nextW).push(ev);
+  });
+
+  const note = (cal.errors && cal.errors.length)
+    ? `<span class="sec-note">nicht erreichbar: ${esc(cal.errors.join(", "))}</span>` : "";
+
+  el.innerHTML = `<section class="cal-panel">
+    <div class="sec-head">
+      <h2>Termine</h2>
+      <span class="tally">${events.length} in zwei Wochen</span>
+      ${note}
+    </div>
+    <div class="cal-cols">
+      <div class="cal-col">
+        <div class="cal-col-head">Diese Woche · ${thisW.length}</div>
+        <div class="agenda">${agendaHtml(thisW)}</div>
+      </div>
+      <div class="cal-col">
+        <div class="cal-col-head">Nächste Woche · ${nextW.length}</div>
+        <div class="agenda">${agendaHtml(nextW)}</div>
+      </div>
+    </div>
+  </section>`;
+}
+
 function render(data) {
   renderSystem(data.system);
+  renderCalendar(data.calendar);
   const s = data.summary;
   const allStates = [];
   data.docker.containers.forEach(c => allStates.push(c.ok));
@@ -478,6 +669,19 @@ function render(data) {
 
   // Inhalt
   let html = "";
+
+  if (data.vpn && data.vpn.enabled) {
+    const v = data.vpn.members || [];
+    const on = v.filter(m => m.connected).length;
+    let cards = "";
+    if (data.vpn.server) cards += vpnServerCard(data.vpn.server);
+    cards += v.map(vpnCard).join("");
+    const inner = (v.length || data.vpn.server)
+      ? `<div class="grid">${cards}</div>`
+      : `<div class="empty">Keine VMs konfiguriert.</div>`;
+    html += section("VPN – VMs", `${on}/${v.length} im VPN`, inner);
+  }
+
   const d = data.docker;
   if (d.enabled) {
     if (d.error) {

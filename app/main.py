@@ -12,11 +12,11 @@ import time
 from pathlib import Path
 
 import yaml
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Body, Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
-from .checks import get_docker_status, get_system_stats, run_check
+from .checks import get_calendar_events, get_docker_status, get_system_stats, run_check
 
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "/config/config.yml")
 STATIC_DIR = Path(__file__).parent / "static"
@@ -43,7 +43,7 @@ def _eq(a: str, b: str) -> bool:
 
 def require_auth(request: Request,
                  credentials: HTTPBasicCredentials = Depends(security)) -> None:
-    if request.url.path in ("/healthz", "/favicon.svg"):   # immer offen
+    if request.url.path in ("/healthz", "/favicon.svg", "/api/agent/report"):  # immer offen
         return
     auth = load_config().get("auth", {}) or {}
     if not auth.get("enabled"):              # Schutz deaktiviert -> alles frei
@@ -78,6 +78,64 @@ async def favicon():
         (STATIC_DIR / "favicon.svg").read_text(encoding="utf-8"),
         media_type="image/svg+xml",
     )
+
+
+# ---- VPN-Agent: Meldungen der VMs (Heartbeat/Push) ----
+# In-Memory-Speicher: agent-id -> {vpn, vpn_ip, device, ts}. Übersteht keinen
+# Neustart, aber die Agents melden sich im Minutentakt neu.
+_agent_reports: dict = {}
+
+
+@app.post("/api/agent/report")
+async def agent_report(payload: dict = Body(...)):
+    cfg = load_config()
+    vpn_cfg = cfg.get("vpn", {}) or {}
+    expected = str(vpn_cfg.get("agent_token", ""))
+    given = str(payload.get("token", ""))
+    if not expected or not secrets.compare_digest(given.encode(), expected.encode()):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ungültiger Agent-Token")
+
+    agent_id = str(payload.get("id", "")).strip()
+    if not agent_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id fehlt")
+
+    _agent_reports[agent_id] = {
+        "vpn": bool(payload.get("vpn", False)),
+        "vpn_ip": (str(payload.get("vpn_ip", "")).strip() or None),
+        "device": (str(payload.get("device", "")).strip() or None),
+        "ts": time.time(),
+    }
+    return {"status": "ok"}
+
+
+def build_vpn_status(vpn_cfg: dict) -> dict:
+    """Baut den VPN-Status aus den konfigurierten Mitgliedern + den Agent-Meldungen."""
+    timeout = float(vpn_cfg.get("timeout", 180))
+    now = time.time()
+    members_out = []
+    for m in vpn_cfg.get("members", []) or []:
+        mid = str(m.get("id", "")).strip()
+        rep = _agent_reports.get(mid)
+        critical = bool(m.get("critical", False))
+        if rep is None or (now - rep["ts"]) > timeout:
+            state, connected, vpn_ip, device, since = "offline", False, None, None, None
+        else:
+            connected = rep["vpn"]
+            state = "connected" if connected else "disconnected"
+            vpn_ip = rep["vpn_ip"]
+            device = rep["device"]
+            since = rep["ts"]
+        members_out.append({
+            "name": m.get("name", mid or "VM"),
+            "state": state,             # connected | disconnected | offline
+            "connected": connected,
+            "vpn_ip": vpn_ip,
+            "device": device,
+            "service": (str(m.get("service", "")).strip() or None),
+            "last_seen": (rep["ts"] if rep else None),
+            "critical": critical,
+        })
+    return {"enabled": True, "members": members_out}
 
 
 @app.get("/api/config")
@@ -133,6 +191,31 @@ async def api_status():
     else:
         system_result = {"enabled": False, "metrics": []}
 
+    # --- Kalender-Termine (optional) ---
+    calendar_cfg = cfg.get("calendar", {}) or {}
+    if calendar_cfg.get("enabled"):
+        calendar_result = await get_calendar_events(calendar_cfg)
+    else:
+        calendar_result = {"enabled": False, "events": []}
+
+    # --- VPN-Status der VMs (via Agent) ---
+    vpn_cfg = cfg.get("vpn", {}) or {}
+    if vpn_cfg.get("enabled"):
+        vpn_result = build_vpn_status(vpn_cfg)
+        # Optional: den VPN-Server selbst auf Erreichbarkeit prüfen
+        server_cfg = vpn_cfg.get("server") or {}
+        if server_cfg.get("target"):
+            vpn_result["server"] = await run_check({
+                "name": server_cfg.get("name", "VPN-Server"),
+                "type": server_cfg.get("type", "ping"),
+                "target": server_cfg.get("target"),
+                "timeout": server_cfg.get("timeout", 3),
+                "insecure": bool(server_cfg.get("insecure", False)),
+                "critical": bool(server_cfg.get("critical", False)),
+            })
+    else:
+        vpn_result = {"enabled": False, "members": []}
+
     # --- Zusammenfassung ---
     up = down = total = 0
     critical_down = []
@@ -156,6 +239,28 @@ async def api_status():
                 if chk["critical"]:
                     critical_down.append(chk["name"])
 
+    # VPN: getrennte/offline Mitglieder zählen mit; kritische lösen den Alarm aus
+    for m in vpn_result["members"]:
+        total += 1
+        if m["connected"]:
+            up += 1
+        else:
+            down += 1
+            if m["critical"]:
+                label = m["name"] + (" (offline)" if m["state"] == "offline" else " (VPN getrennt)")
+                critical_down.append(label)
+
+    # VPN-Server-Kachel (falls konfiguriert)
+    srv = vpn_result.get("server")
+    if srv:
+        total += 1
+        if srv["ok"]:
+            up += 1
+        else:
+            down += 1
+            if srv["critical"]:
+                critical_down.append(srv["name"] + " (VPN-Server)")
+
     # System-Temperatur kann den kritischen Alarm oben auslösen
     if system_result.get("alarm"):
         critical_down.append(system_result.get("alarm_label", "System-Temperatur"))
@@ -171,4 +276,6 @@ async def api_status():
         "docker": docker_result,
         "groups": groups_out,
         "system": system_result,
+        "calendar": calendar_result,
+        "vpn": vpn_result,
     }
