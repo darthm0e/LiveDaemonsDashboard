@@ -203,6 +203,5 @@ Glances-*Plugin* (läuft direkt auf dem Host) – dann sind die Sensoren da. Die
 `ping`/`tcp` zeigen nur, ob die VM **antwortet**. Wenn du stattdessen den vom
 Hypervisor gemeldeten Zustand (an/aus/pausiert) willst, lässt sich in
 `app/checks.py` ein zusätzlicher Typ andocken – z. B. die Proxmox-API
-(`/api2/json/nodes/<node>/qemu/<vmid>/status/current`) oder libvirt. Sag
-Bescheid, dann ergänze ich den passenden Typ.
+(`/api2/json/nodes/<node>/qemu/<vmid>/status/current`) oder libvirt.
 ```
